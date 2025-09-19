@@ -290,7 +290,7 @@ export default function CheckPage() {
               }
             }}
           >
-            >
+            <span aria-hidden="true">&gt;</span>
           </button>
         </div>
 
@@ -328,4 +328,5 @@ export default function CheckPage() {
     </div>
   );
 }
+
 
