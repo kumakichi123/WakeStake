@@ -7,7 +7,19 @@ import { supabaseAnon } from "@/lib/supabase-browser";
 const MapPicker = dynamic(() => import("../components/MapPicker"), { ssr: false });
 
 type LatLng = { lat: number; lng: number };
-const presets = [1, 5, 10];
+const stakeOptions = [1, 5, 10, 20, "custom"] as const;
+type StakeOption = (typeof stakeOptions)[number];
+const MAJOR_TIMEZONES = [
+  "UTC",
+  "America/Los_Angeles",
+  "America/New_York",
+  "Europe/London",
+  "Europe/Paris",
+  "Asia/Tokyo",
+  "Asia/Seoul",
+  "Asia/Singapore",
+  "Australia/Sydney"
+] as const;
 
 function OnboardingContent() {
   const router = useRouter();
@@ -18,7 +30,9 @@ function OnboardingContent() {
   const [address, setAddress] = useState("Resolving location...");
   const [wake, setWake] = useState("07:00");
   const [stake, setStake] = useState<number>(5);
+  const [stakeOption, setStakeOption] = useState<StakeOption>(5);
   const [custom, setCustom] = useState("");
+  const [stakeNotice, setStakeNotice] = useState<string | null>(null);
   const [tzid, setTzid] = useState("UTC");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,9 +71,43 @@ function OnboardingContent() {
   }, []);
 
   useEffect(() => {
+    if (stakeOption === "custom") return;
+    setStake(stakeOption);
+    setCustom(String(stakeOption));
+    setStakeNotice(null);
+  }, [stakeOption]);
+
+  useEffect(() => {
+    if (stakeOption !== "custom") return;
+    if (custom === "") {
+      setStakeNotice(null);
+      return;
+    }
     const value = Number(custom);
-    if (Number.isFinite(value) && value > 0) setStake(value);
-  }, [custom]);
+    if (!Number.isFinite(value)) return;
+    const clamped = Math.max(1, Math.min(100, Math.round(value)));
+    setStake(clamped);
+    if (value > 100) {
+      if (custom !== "100") {
+        setCustom("100");
+      }
+      setStakeNotice("Max stake is $100. Reset to $100.");
+      return;
+    }
+    setStakeNotice(null);
+    const normalized = String(clamped);
+    if (normalized !== custom) {
+      setCustom(normalized);
+    }
+  }, [custom, stakeOption]);
+
+  const timezoneOptions = useMemo(() => {
+    const list = [...MAJOR_TIMEZONES] as string[];
+    if (!list.includes(tzid)) {
+      list.unshift(tzid);
+    }
+    return list;
+  }, [tzid]);
 
   const selected = useMemo(() => `$${stake}`, [stake]);
 
@@ -70,6 +118,9 @@ function OnboardingContent() {
     try {
       if (!point) {
         throw new Error("Location has not been resolved yet.");
+      }
+      if (!Number.isFinite(stake) || stake <= 0) {
+        throw new Error("Please choose a positive stake amount.");
       }
       const { data } = await supabaseAnon.auth.getSession();
       const token = data.session?.access_token;
@@ -148,32 +199,62 @@ function OnboardingContent() {
       <section className="card field">
         <label>Wake stake (USD)</label>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          {presets.map(value => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                setStake(value);
-                setCustom(String(value));
-              }}
-              className={`chip ${stake === value ? "active" : ""}`}
-            >
-              ${value}
-            </button>
-          ))}
-          <input
-            placeholder="Custom"
-            value={custom}
-            onChange={event => setCustom(event.target.value)}
-            style={{ padding: 10, border: "1px solid #e9d5ff", borderRadius: 10, width: 140 }}
-          />
+          <select
+            value={stakeOption === "custom" ? "custom" : String(stakeOption)}
+            onChange={event => {
+              const value = event.target.value;
+              if (value === "custom") {
+                setStakeOption("custom");
+                setStakeNotice(null);
+                return;
+              }
+              const amount = Number(value);
+              setStakeOption(amount as StakeOption);
+              setStake(amount);
+              setCustom(String(amount));
+              setStakeNotice(null);
+            }}
+            style={{ padding: 10, border: "1px solid #e9d5ff", borderRadius: 10, minWidth: 140 }}
+          >
+            {stakeOptions.map(option => (
+              <option key={option} value={option === "custom" ? "custom" : option}>
+                {option === "custom" ? "Custom amount" : `$${option}`}
+              </option>
+            ))}
+          </select>
+          {stakeOption === "custom" && (
+            <input
+              type="number"
+              min={1}
+              step={1}
+              placeholder="Enter amount"
+              value={custom}
+              onChange={event => setCustom(event.target.value)}
+              style={{ padding: 10, border: "1px solid #e9d5ff", borderRadius: 10, width: 140 }}
+            />
+          )}
           <span style={{ marginLeft: 8, fontWeight: 700 }}>Selected: {selected}</span>
+          {stakeNotice && (
+            <small style={{ display: "block", color: "#b91c1c", marginTop: 4 }}>
+              {stakeNotice}
+            </small>
+          )}
         </div>
       </section>
 
       <section className="card field">
         <label>Timezone</label>
-        <input value={tzid} onChange={event => setTzid(event.target.value)} />
+        <select
+          value={tzid}
+          onChange={event => setTzid(event.target.value)}
+          style={{ padding: 10, border: "1px solid #e9d5ff", borderRadius: 10, width: "100%" }}
+        >
+          {timezoneOptions.map(zone => (
+            <option key={zone} value={zone}>
+              {zone}
+            </option>
+          ))}
+        </select>
       </section>
 
       <div style={{ marginTop: 18 }}>
@@ -213,3 +294,27 @@ export default function OnboardingPage() {
     </Suspense>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

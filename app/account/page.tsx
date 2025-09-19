@@ -7,7 +7,19 @@ import { supabaseAnon } from "@/lib/supabase-browser";
 type LatLng = { lat: number; lng: number };
 
 const MapPicker = dynamic(() => import("../components/MapPicker"), { ssr: false });
-const quickStakes = [1, 5, 10, 20, 50];
+const stakeOptions = [1, 5, 10, 20, "custom"] as const;
+type StakeOption = (typeof stakeOptions)[number];
+const MAJOR_TIMEZONES = [
+  "UTC",
+  "America/Los_Angeles",
+  "America/New_York",
+  "Europe/London",
+  "Europe/Paris",
+  "Asia/Tokyo",
+  "Asia/Seoul",
+  "Asia/Singapore",
+  "Australia/Sydney"
+] as const;
 
 export default function AccountPage() {
   const router = useRouter();
@@ -15,7 +27,9 @@ export default function AccountPage() {
   const [address, setAddress] = useState("Loading...");
   const [wake, setWake] = useState("07:00");
   const [stake, setStake] = useState<number>(5);
+  const [stakeOption, setStakeOption] = useState<StakeOption>(5);
   const [custom, setCustom] = useState("");
+  const [stakeNotice, setStakeNotice] = useState<string | null>(null);
   const [tzid, setTzid] = useState("UTC");
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
@@ -48,8 +62,20 @@ export default function AccountPage() {
         setTzid(body.tz || "UTC");
         setWake(body.wake_time || "07:00");
         if (typeof body.stake_usd === "number") {
-          setStake(body.stake_usd);
-          setCustom(String(body.stake_usd));
+          const sanitized = Math.max(1, Math.min(100, Math.round(body.stake_usd)));
+          setStake(sanitized);
+          setCustom(String(sanitized));
+          setStakeNotice(body.stake_usd > 100 ? "Max stake is $100. Reset to $100." : null);
+          setStakeOption(
+            stakeOptions.includes(sanitized as StakeOption)
+              ? (sanitized as StakeOption)
+              : "custom"
+          );
+        } else {
+          setStake(5);
+          setStakeOption(5);
+          setCustom("5");
+          setStakeNotice(null);
         }
         setActive(body.active_everyday ?? true);
         setMessage(null);
@@ -77,9 +103,24 @@ export default function AccountPage() {
   }, [router]);
 
   useEffect(() => {
+    if (stakeOption === "custom") return;
+    setStake(stakeOption);
+    setCustom(String(stakeOption));
+  }, [stakeOption]);
+
+  useEffect(() => {
+    if (stakeOption !== "custom") return;
     const value = Number(custom);
     if (Number.isFinite(value) && value > 0) setStake(value);
-  }, [custom]);
+  }, [custom, stakeOption]);
+
+  const timezoneOptions = useMemo(() => {
+    const list = [...MAJOR_TIMEZONES];
+    if (!list.includes(tzid)) {
+      list.unshift(tzid);
+    }
+    return list;
+  }, [tzid]);
 
   const selected = useMemo(() => `$${stake}`, [stake]);
 
@@ -190,36 +231,60 @@ export default function AccountPage() {
           <div className="divider" />
           <div className="settings-row">
             <label>Wake stake (USD)</label>
-            <div className="stake-options">
-              <div className="stake-buttons">
-                {quickStakes.map(value => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => {
-                      setStake(value);
-                      setCustom(String(value));
-                    }}
-                    className={`chip ${stake === value ? "active" : ""}`}
-                  >
-                    ${value}
-                  </button>
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <select
+                value={stakeOption === "custom" ? "custom" : String(stakeOption)}
+                onChange={event => {
+                  const value = event.target.value;
+                  if (value === "custom") {
+                    setStakeOption("custom");
+                    setStakeNotice(null);
+                    return;
+                  }
+                  const amount = Number(value);
+                  setStakeOption(amount as StakeOption);
+                  setStake(amount);
+                  setCustom(String(amount));
+                  setStakeNotice(null);
+                }}
+                style={{ padding: 10, border: "1px solid #e9d5ff", borderRadius: 10, minWidth: 160 }}
+              >
+                {stakeOptions.map(option => (
+                  <option key={option} value={option === "custom" ? "custom" : option}>
+                    {option === "custom" ? "Custom amount" : `$${option}`}
+                  </option>
                 ))}
-              </div>
-              <div className="stake-input">
-                <span>$</span>
-                <input
-                  placeholder="Custom"
-                  value={custom}
-                  onChange={event => setCustom(event.target.value)}
-                />
-              </div>
+              </select>
+              {stakeOption === "custom" && (
+                <div className="stake-input">
+                  <span>$</span>
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    placeholder="Custom"
+                    value={custom}
+                    onChange={event => setCustom(event.target.value)}
+                  />
+                </div>
+              )}
+              {stakeNotice && (
+                <small style={{ display: "block", color: "#b91c1c" }}>
+                  {stakeNotice}
+                </small>
+              )}
             </div>
           </div>
           <div className="divider" />
           <div className="settings-row">
             <label>Timezone</label>
-            <input value={tzid} onChange={event => setTzid(event.target.value)} />
+            <select value={tzid} onChange={event => setTzid(event.target.value)}>
+              {timezoneOptions.map(zone => (
+                <option key={zone} value={zone}>
+                  {zone}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </section>
@@ -260,3 +325,47 @@ export default function AccountPage() {
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
