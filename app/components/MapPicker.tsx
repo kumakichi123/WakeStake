@@ -124,9 +124,7 @@ export default function MapPicker({
       zoom={17}
       scrollWheelZoom={false}
       style={{ height: 320, width: "100%", borderRadius: 12, overflow: "hidden" }}
-      whenCreated={map => {
-        mapRef.current = map;
-      }}
+      ref={mapRef}
     >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
       <Marker position={[pos.lat, pos.lng]} icon={purple} />
@@ -143,3 +141,4 @@ export default function MapPicker({
     </MapContainer>
   );
 }
+

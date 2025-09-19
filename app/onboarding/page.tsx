@@ -1,7 +1,7 @@
 ﻿"use client";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { supabaseAnon } from "@/lib/supabase-browser";
 
 const MapPicker = dynamic(() => import("../components/MapPicker"), { ssr: false });
@@ -9,7 +9,7 @@ const MapPicker = dynamic(() => import("../components/MapPicker"), { ssr: false 
 type LatLng = { lat: number; lng: number };
 const presets = [1, 5, 10];
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const ok = searchParams.get("ok");
@@ -194,5 +194,22 @@ export default function OnboardingPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="container" style={{ maxWidth: 920, padding: "40px 20px 80px" }}>
+          <h1 style={{ textAlign: "center", fontSize: 28, fontWeight: 800, color: "#6D28D9", marginBottom: 16 }}>
+            Slide to commit
+          </h1>
+          <p style={{ textAlign: "center", color: "#6b7280" }}>Loading onboarding...</p>
+        </main>
+      }
+    >
+      <OnboardingContent />
+    </Suspense>
   );
 }
