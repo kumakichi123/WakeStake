@@ -9,7 +9,9 @@ type LatLng = { lat: number; lng: number };
 const MapPicker = dynamic(() => import("../components/MapPicker"), { ssr: false });
 const stakeOptions = [1, 5, 10, 20, "custom"] as const;
 type StakeOption = (typeof stakeOptions)[number];
-const MAJOR_TIMEZONES = [
+
+// ※ ここをタプル型(as const)ではなく string[] にする
+const MAJOR_TIMEZONES: string[] = [
   "UTC",
   "America/Los_Angeles",
   "America/New_York",
@@ -18,8 +20,8 @@ const MAJOR_TIMEZONES = [
   "Asia/Tokyo",
   "Asia/Seoul",
   "Asia/Singapore",
-  "Australia/Sydney"
-] as const;
+  "Australia/Sydney",
+];
 
 export default function AccountPage() {
   const router = useRouter();
@@ -30,7 +32,7 @@ export default function AccountPage() {
   const [stakeOption, setStakeOption] = useState<StakeOption>(5);
   const [custom, setCustom] = useState("");
   const [stakeNotice, setStakeNotice] = useState<string | null>(null);
-  const [tzid, setTzid] = useState("UTC");
+  const [tzid, setTzid] = useState<string>("UTC");
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -59,7 +61,7 @@ export default function AccountPage() {
         if (typeof body.home_lat === "number" && typeof body.home_lng === "number") {
           setPoint({ lat: body.home_lat, lng: body.home_lng });
         }
-        setTzid(body.tz || "UTC");
+        setTzid(typeof body.tz === "string" && body.tz ? body.tz : "UTC");
         setWake(body.wake_time || "07:00");
         if (typeof body.stake_usd === "number") {
           const sanitized = Math.max(1, Math.min(100, Math.round(body.stake_usd)));
@@ -67,9 +69,7 @@ export default function AccountPage() {
           setCustom(String(sanitized));
           setStakeNotice(body.stake_usd > 100 ? "Max stake is $100. Reset to $100." : null);
           setStakeOption(
-            stakeOptions.includes(sanitized as StakeOption)
-              ? (sanitized as StakeOption)
-              : "custom"
+            stakeOptions.includes(sanitized as StakeOption) ? (sanitized as StakeOption) : "custom"
           );
         } else {
           setStake(5);
@@ -115,8 +115,8 @@ export default function AccountPage() {
   }, [custom, stakeOption]);
 
   const timezoneOptions = useMemo(() => {
-    const list = [...MAJOR_TIMEZONES];
-    if (!list.includes(tzid)) {
+    const list = [...MAJOR_TIMEZONES]; // string[]
+    if (tzid && !list.includes(tzid)) {
       list.unshift(tzid);
     }
     return list;
@@ -192,24 +192,67 @@ export default function AccountPage() {
     <main className="container" style={{ maxWidth: 960, padding: "40px 20px 80px" }}>
       <header style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 30, fontWeight: 800, color: "#1F1B2D", marginBottom: 6 }}>My settings</h1>
-        <p style={{ color: "#6b7280" }}>Fine tune your wake-up commitment and home base. Updates apply from the next check-out window.</p>
+        <p style={{ color: "#6b7280" }}>
+          Fine tune your wake-up commitment and home base. Updates apply from the next check-out window.
+        </p>
       </header>
 
-      <section style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", marginBottom: 24 }}>
+      <section
+        style={{
+          display: "grid",
+          gap: 20,
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          marginBottom: 24,
+        }}
+      >
         <div className="card" style={{ padding: 18 }}>
-          <h2 style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>Wake window</h2>
+          <h2
+            style={{
+              fontSize: 12,
+              color: "#6b7280",
+              textTransform: "uppercase",
+              letterSpacing: 0.6,
+              marginBottom: 6,
+            }}
+          >
+            Wake window
+          </h2>
           <p style={{ fontSize: 22, fontWeight: 700, color: "#1f2937" }}>{wake}</p>
           <span style={{ fontSize: 12, color: "#6b7280" }}>Timezone: {tzid}</span>
         </div>
         <div className="card" style={{ padding: 18 }}>
-          <h2 style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>Stake</h2>
+          <h2
+            style={{
+              fontSize: 12,
+              color: "#6b7280",
+              textTransform: "uppercase",
+              letterSpacing: 0.6,
+              marginBottom: 6,
+            }}
+          >
+            Stake
+          </h2>
           <p style={{ fontSize: 22, fontWeight: 700, color: "#1f2937" }}>{selected}</p>
           <span style={{ fontSize: 12, color: "#6b7280" }}>Only charged when you miss your deadline.</span>
         </div>
         <div className="card" style={{ padding: 18 }}>
-          <h2 style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>Home base</h2>
-          <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>{address || "Resolving location..."}</p>
-          <span style={{ fontSize: 12, color: "#6b7280" }}>{point ? `${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}` : ""}</span>
+          <h2
+            style={{
+              fontSize: 12,
+              color: "#6b7280",
+              textTransform: "uppercase",
+              letterSpacing: 0.6,
+              marginBottom: 6,
+            }}
+          >
+            Home base
+          </h2>
+          <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+            {address || "Resolving location..."}
+          </p>
+          <span style={{ fontSize: 12, color: "#6b7280" }}>
+            {point ? `${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}` : ""}
+          </span>
         </div>
       </section>
 
@@ -217,7 +260,7 @@ export default function AccountPage() {
         <MapPicker
           value={point || undefined}
           onChange={(lat, lng) => setPoint({ lat, lng })}
-          onAddress={value => setAddress(value || "")}
+          onAddress={(value) => setAddress(value || "")}
         />
         <small style={{ color: "#6b7280" }}>Drag the pin to update your morning departure radius.</small>
       </div>
@@ -226,7 +269,7 @@ export default function AccountPage() {
         <div className="settings-list">
           <div className="settings-row">
             <label>Wake time (local)</label>
-            <input type="time" value={wake} onChange={event => setWake(event.target.value)} />
+            <input type="time" value={wake} onChange={(event) => setWake(event.target.value)} />
           </div>
           <div className="divider" />
           <div className="settings-row">
@@ -234,7 +277,7 @@ export default function AccountPage() {
             <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
               <select
                 value={stakeOption === "custom" ? "custom" : String(stakeOption)}
-                onChange={event => {
+                onChange={(event) => {
                   const value = event.target.value;
                   if (value === "custom") {
                     setStakeOption("custom");
@@ -249,7 +292,7 @@ export default function AccountPage() {
                 }}
                 style={{ padding: 10, border: "1px solid #e9d5ff", borderRadius: 10, minWidth: 160 }}
               >
-                {stakeOptions.map(option => (
+                {stakeOptions.map((option) => (
                   <option key={option} value={option === "custom" ? "custom" : option}>
                     {option === "custom" ? "Custom amount" : `$${option}`}
                   </option>
@@ -264,22 +307,18 @@ export default function AccountPage() {
                     step={1}
                     placeholder="Custom"
                     value={custom}
-                    onChange={event => setCustom(event.target.value)}
+                    onChange={(event) => setCustom(event.target.value)}
                   />
                 </div>
               )}
-              {stakeNotice && (
-                <small style={{ display: "block", color: "#b91c1c" }}>
-                  {stakeNotice}
-                </small>
-              )}
+              {stakeNotice && <small style={{ display: "block", color: "#b91c1c" }}>{stakeNotice}</small>}
             </div>
           </div>
           <div className="divider" />
           <div className="settings-row">
             <label>Timezone</label>
-            <select value={tzid} onChange={event => setTzid(event.target.value)}>
-              {timezoneOptions.map(zone => (
+            <select value={tzid} onChange={(event) => setTzid(event.target.value)}>
+              {timezoneOptions.map((zone) => (
                 <option key={zone} value={zone}>
                   {zone}
                 </option>
@@ -297,75 +336,35 @@ export default function AccountPage() {
             : "WakeStake is paused. No reminders or charges will run until you resume."}
         </p>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button
-            className="btn link"
-            type="button"
-            onClick={() => toggleActive(false)}
-            disabled={loading || !active}
-          >
+          <button className="btn link" type="button" onClick={() => toggleActive(false)} disabled={loading || !active}>
             Pause WakeStake
           </button>
-          <button
-            className="btn"
-            type="button"
-            onClick={() => toggleActive(true)}
-            disabled={loading || active}
-          >
+          <button className="btn" type="button" onClick={() => toggleActive(true)} disabled={loading || active}>
             Resume WakeStake
           </button>
         </div>
       </section>
 
       <div style={{ marginTop: 24, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <button className="btn primary" style={{ minWidth: 160 }} onClick={handleSave} disabled={loading || initializing}>
+        <button
+          className="btn primary"
+          style={{ minWidth: 160 }}
+          onClick={handleSave}
+          disabled={loading || initializing}
+        >
           {loading ? "Saving..." : "Save changes"}
         </button>
-        {message && <span style={{ fontSize: 12, color: message.includes("updated") || message.includes("resumed") ? "#0f766e" : "#b91c1c" }}>{message}</span>}
+        {message && (
+          <span
+            style={{
+              fontSize: 12,
+              color: message.includes("updated") || message.includes("resumed") ? "#0f766e" : "#b91c1c",
+            }}
+          >
+            {message}
+          </span>
+        )}
       </div>
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
