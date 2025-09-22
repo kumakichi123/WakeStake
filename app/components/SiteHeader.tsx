@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -20,14 +21,10 @@ export default function SiteHeader() {
       setEmail(data.session?.user?.email ?? null);
       setLoading(false);
     });
-
     const { data: listener } = supabaseAnon.auth.onAuthStateChange((_event, session) => {
       setEmail(session?.user?.email ?? null);
     });
-
-    return () => {
-      listener?.subscription?.unsubscribe();
-    };
+    return () => listener?.subscription?.unsubscribe();
   }, []);
 
   const handleLogout = async () => {
@@ -38,36 +35,33 @@ export default function SiteHeader() {
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <Link href="/" className="brand">
-          WakeStake
-        </Link>
-        <nav className="topnav">
-          {links.map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={pathname?.startsWith(link.href) ? "active" : ""}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <Link href="/" className="brand">WakeStake</Link>
+
+        {/* 未ログイン時はナビを非表示。loading中も隠す */}
+        {email && !loading && (
+          <nav className="topnav">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={pathname?.startsWith(link.href) ? "active" : ""}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        )}
+
         <div className="top-actions">
           {!loading && email ? (
             <>
               <span className="user-email">{email}</span>
-              <button type="button" className="btn link" onClick={handleLogout}>
-                Log out
-              </button>
+              <button type="button" className="btn link" onClick={handleLogout}>Log out</button>
             </>
           ) : (
             <>
-              <Link className="btn link" href="/signin">
-                Sign in
-              </Link>
-              <Link className="btn" href="/signup">
-                Sign up
-              </Link>
+              <Link className="btn link" href="/signin">Sign in</Link>
+              <Link className="btn" href="/signup">Sign up</Link>
             </>
           )}
         </div>
@@ -75,4 +69,3 @@ export default function SiteHeader() {
     </header>
   );
 }
-

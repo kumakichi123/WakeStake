@@ -2,16 +2,16 @@
 
 const features = [
   {
-    title: "Put real stakes on the line",
-    body: "Choose a dollar amount that motivates you. You only pay when you miss your wake deadline.",
+    title: "Only pay when you snooze",
+    body: "Putting real money at stake keeps you honest. You only get charged if you oversleep.",
   },
   {
     title: "Proof you stepped outside",
-    body: "The app checks that you leave your saved home radius using precise GPS before your cutoff time.",
+    body: "WakeStake confirms you left your home radius with precise GPS before your deadline.",
   },
   {
-    title: "Keep the streak alive",
-    body: "Track consecutive wins, gentle nudges, and see how your mornings improve week over week.",
+    title: "Track your streak",
+    body: "See wins, nudges, and long-term progress so your new routine sticks for good.",
   },
 ];
 
@@ -28,18 +28,19 @@ export default function Page() {
         <div className="landing-hero-copy">
           <span className="badge">Wake up with purpose</span>
           <h1>Beat your alarm with real accountability.</h1>
+          {/* ヘッドライン直下に課金条件を明記 */}
+          <p className="hero-disclaimer">You are charged only when you miss your check-out window.</p>
           <p>
             WakeStake helps you build consistent mornings. Set a wake deadline, walk outside, and only pay when you
             miss. Your future self will thank you.
           </p>
+          {/* ヒーローCTAは1つに統一 */}
           <div className="landing-hero-cta">
             <Link className="btn" href="/signup">
               Get started
             </Link>
-            <Link className="btn link" href="#how-it-works">
-              See how it works
-            </Link>
           </div>
+
           <div className="hero-metrics">
             <div>
               <strong>60 min</strong>
@@ -55,10 +56,12 @@ export default function Page() {
             </div>
           </div>
         </div>
+
         <div className="landing-hero-card">
           <div className="card-body">
-            <h2>Tomorrow at 7:00</h2>
-            <p>“Slide to check out” when you step outside. Miss it and $10 goes to your future self fund.</p>
+            {/* サンプル明記 */}
+            <h2>Sample check-in: Tomorrow at 7:00</h2>
+            <p>Slide to check out when you step outside. Miss it and $10 goes to your future self fund.</p>
             <ul>
               <li>Wake window: 06:00 – 07:00</li>
               <li>Home radius: 70 m</li>
@@ -71,12 +74,38 @@ export default function Page() {
       <section id="how-it-works" className="landing-section">
         <h2>How WakeStake keeps you moving</h2>
         <div className="landing-grid">
-          {features.map(feature => (
+          {features.map((feature) => (
             <article key={feature.title} className="card feature-card">
               <h3>{feature.title}</h3>
               <p>{feature.body}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      {/* 使用例を明示し、朝型のメリットを補足 */}
+      <section className="landing-section use-cases">
+        <h2>Perfect when you want results</h2>
+        <p className="section-sub">
+          Mornings compound benefits: fewer distractions, higher willpower, better light exposure, and more consistent habits.
+        </p>
+        <div className="landing-grid">
+          <article className="card feature-card">
+            <h3>Morning runs and gym</h3>
+            <p>Commit to a 5 km run or a 7 a.m. gym session. Skipping costs money. Showing up pays you in momentum.</p>
+          </article>
+          <article className="card feature-card">
+            <h3>Force a morning routine</h3>
+            <p>Lock in wake time, breakfast, journaling, or study blocks. The stake keeps you honest until it’s a habit.</p>
+          </article>
+          <article className="card feature-card">
+            <h3>Fix chronic lateness</h3>
+            <p>If class or work starts at nine, set your deadline earlier. Step outside on time and stop paying for tardiness.</p>
+          </article>
+          <article className="card feature-card">
+            <h3>Study or side-project time</h3>
+            <p>Carve out quiet hours before the day explodes. Ship code, read, or review—distraction-free.</p>
+          </article>
         </div>
       </section>
 
@@ -100,7 +129,7 @@ export default function Page() {
           </div>
           <div className="cta-actions">
             <Link className="btn" href="/signup">
-              Create account
+              Get started
             </Link>
             <Link className="btn link" href="/signin">
               I already have one
