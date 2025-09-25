@@ -39,6 +39,30 @@ export default function AccountPage() {
   const [active, setActive] = useState(true);
 
   useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/me/status");
+        const body = await res.json().catch(() => ({}));
+        if (!active) return;
+        if (res.status === 401) {
+          const next = encodeURIComponent(window.location.pathname);
+          router.replace(`/signin?next=${next}`);
+          return;
+        }
+        if (res.ok && !body?.configured) {
+          router.replace("/onboarding");
+        }
+      } catch (error) {
+        console.debug("[status-check]", error);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
@@ -368,3 +392,13 @@ export default function AccountPage() {
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
+

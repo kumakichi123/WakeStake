@@ -21,6 +21,25 @@ const steps = [
   "Slide to check out once you're out the door.",
 ];
 
+const useCases = [
+  {
+    title: "Morning workouts, finally",
+    body: "Commit to a sunrise run or gym session. Skipping costs money; showing up builds momentum.",
+  },
+  {
+    title: "Force a morning routine",
+    body: "Lock in wake time, breakfast, journaling, or study blocks until the habit sticks for good.",
+  },
+  {
+    title: "Fix chronic lateness",
+    body: "Need to reach class or work on time? The stake nudges you out the door before the rush.",
+  },
+  {
+    title: "Make space for side projects",
+    body: "Claim quiet time for code, reading, or exam prep before the rest of the day begins.",
+  },
+];
+
 export default function Page() {
   return (
     <main className="landing">
@@ -28,13 +47,11 @@ export default function Page() {
         <div className="landing-hero-copy">
           <span className="badge">Wake up with purpose</span>
           <h1>Beat your alarm with real accountability.</h1>
-          {/* ヘッドライン直下に課金条件を明記 */}
           <p className="hero-disclaimer">You are charged only when you miss your check-out window.</p>
           <p>
             WakeStake helps you build consistent mornings. Set a wake deadline, walk outside, and only pay when you
             miss. Your future self will thank you.
           </p>
-          {/* ヒーローCTAは1つに統一 */}
           <div className="landing-hero-cta">
             <Link className="btn" href="/signup">
               Get started
@@ -59,7 +76,6 @@ export default function Page() {
 
         <div className="landing-hero-card">
           <div className="card-body">
-            {/* サンプル明記 */}
             <h2>Sample check-in: Tomorrow at 7:00</h2>
             <p>Slide to check out when you step outside. Miss it and $10 goes to your future self fund.</p>
             <ul>
@@ -74,7 +90,7 @@ export default function Page() {
       <section id="how-it-works" className="landing-section">
         <h2>How WakeStake keeps you moving</h2>
         <div className="landing-grid">
-          {features.map((feature) => (
+          {features.map(feature => (
             <article key={feature.title} className="card feature-card">
               <h3>{feature.title}</h3>
               <p>{feature.body}</p>
@@ -83,29 +99,18 @@ export default function Page() {
         </div>
       </section>
 
-      {/* 使用例を明示し、朝型のメリットを補足 */}
       <section className="landing-section use-cases">
         <h2>Perfect when you want results</h2>
         <p className="section-sub">
-          Mornings compound benefits: fewer distractions, higher willpower, better light exposure, and more consistent habits.
+          Morning momentum compounds: fewer distractions, brighter light, higher willpower, and habits that actually stick.
         </p>
         <div className="landing-grid">
-          <article className="card feature-card">
-            <h3>Morning runs and gym</h3>
-            <p>Commit to a 5 km run or a 7 a.m. gym session. Skipping costs money. Showing up pays you in momentum.</p>
-          </article>
-          <article className="card feature-card">
-            <h3>Force a morning routine</h3>
-            <p>Lock in wake time, breakfast, journaling, or study blocks. The stake keeps you honest until it’s a habit.</p>
-          </article>
-          <article className="card feature-card">
-            <h3>Fix chronic lateness</h3>
-            <p>If class or work starts at nine, set your deadline earlier. Step outside on time and stop paying for tardiness.</p>
-          </article>
-          <article className="card feature-card">
-            <h3>Study or side-project time</h3>
-            <p>Carve out quiet hours before the day explodes. Ship code, read, or review—distraction-free.</p>
-          </article>
+          {useCases.map(useCase => (
+            <article key={useCase.title} className="card feature-card">
+              <h3>{useCase.title}</h3>
+              <p>{useCase.body}</p>
+            </article>
+          ))}
         </div>
       </section>
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -15,16 +15,52 @@ export default function SiteHeader() {
   const pathname = usePathname();
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [configured, setConfigured] = useState(false);
 
   useEffect(() => {
-    supabaseAnon.auth.getSession().then(({ data }) => {
-      setEmail(data.session?.user?.email ?? null);
+    let active = true;
+
+    const loadSession = async () => {
+      const { data } = await supabaseAnon.auth.getSession();
+      if (!active) return;
+      const nextEmail = data.session?.user?.email ?? null;
+      setEmail(nextEmail);
       setLoading(false);
-    });
+      if (nextEmail) {
+        try {
+          const res = await fetch("/api/me/status");
+          const body = await res.json().catch(() => ({}));
+          if (!active) return;
+          setConfigured(Boolean(body?.configured));
+        } catch (error) {
+          if (active) setConfigured(false);
+        }
+      } else {
+        setConfigured(false);
+      }
+    };
+
+    loadSession();
+
     const { data: listener } = supabaseAnon.auth.onAuthStateChange((_event, session) => {
-      setEmail(session?.user?.email ?? null);
+      const nextEmail = session?.user?.email ?? null;
+      setEmail(nextEmail);
+      if (nextEmail) {
+        fetch("/api/me/status")
+          .then(res => res.json().catch(() => ({})))
+          .then(body => {
+            setConfigured(Boolean(body?.configured));
+          })
+          .catch(() => setConfigured(false));
+      } else {
+        setConfigured(false);
+      }
     });
-    return () => listener?.subscription?.unsubscribe();
+
+    return () => {
+      active = false;
+      listener?.subscription?.unsubscribe();
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -35,33 +71,40 @@ export default function SiteHeader() {
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <Link href="/" className="brand">WakeStake</Link>
+        <Link href="/" className="brand">
+          WakeStake
+        </Link>
 
-        {/* 未ログイン時はナビを非表示。loading中も隠す */}
-        {email && !loading && (
-          <nav className="topnav">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={pathname?.startsWith(link.href) ? "active" : ""}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        )}
+        <nav className="topnav">
+          {email && configured
+            ? links.map(link => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={pathname?.startsWith(link.href) ? "active" : ""}
+                >
+                  {link.label}
+                </Link>
+              ))
+            : null}
+        </nav>
 
         <div className="top-actions">
           {!loading && email ? (
             <>
               <span className="user-email">{email}</span>
-              <button type="button" className="btn link" onClick={handleLogout}>Log out</button>
+              <button type="button" className="btn link" onClick={handleLogout}>
+                Log out
+              </button>
             </>
           ) : (
             <>
-              <Link className="btn link" href="/signin">Sign in</Link>
-              <Link className="btn" href="/signup">Sign up</Link>
+              <Link className="btn" href="/signup">
+                Get started
+              </Link>
+              <Link className="btn link" href="/signin">
+                Sign in
+              </Link>
             </>
           )}
         </div>

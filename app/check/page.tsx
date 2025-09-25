@@ -59,6 +59,29 @@ export default function CheckPage() {
   }, [router]);
 
   useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/me/status");
+        const body = await res.json().catch(() => ({}));
+        if (!active) return;
+        if (res.status === 401) {
+          const next = encodeURIComponent(window.location.pathname);
+          router.replace(`/signin?next=${next}`);
+          return;
+        }
+        if (res.ok && !body?.configured) {
+          router.replace("/onboarding");
+        }
+      } catch (error) {
+        console.debug("[status-check]", error);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [router]);
+  useEffect(() => {
     const updateWidth = () => {
       if (trackRef.current) {
         setTrackWidth(trackRef.current.offsetWidth);
@@ -365,3 +388,6 @@ export default function CheckPage() {
     </div>
   );
 }
+
+
+

@@ -129,3 +129,8 @@ html,body{background:var(--bg);color:var(--text);}
   .slide-track{height:56px;padding:4px;}
   .slide-knob{width:48px;height:48px;}
 }
+
+.hero-disclaimer{margin:0;color:#7c3aed;font-size:14px;font-weight:600;}
+.section-sub{margin:0;color:#6b7280;font-size:15px;max-width:560px;}
+.use-cases .feature-card{align-items:flex-start;}
+

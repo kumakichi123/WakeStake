@@ -14,6 +14,30 @@ export default function History() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/me/status");
+        const body = await res.json().catch(() => ({}));
+        if (!active) return;
+        if (res.status === 401) {
+          const next = encodeURIComponent(window.location.pathname);
+          router.replace(`/signin?next=${next}`);
+          return;
+        }
+        if (res.ok && !body?.configured) {
+          router.replace("/onboarding");
+        }
+      } catch (error) {
+        console.debug("[status-check]", error);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
+  useEffect(() => {
     let mounted = true;
     const load = async () => {
       const { data } = await supabaseAnon.auth.getSession();
@@ -109,3 +133,8 @@ export default function History() {
     </main>
   );
 }
+
+
+
+
+
