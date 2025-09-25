@@ -14,13 +14,12 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-      { url: "/icons/icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" }
     ],
     apple: [
-      { url: "/icons/apple-touch-icon.png" },
-    ],
-  },
+      { url: "/icons/apple-touch-icon.png" }
+    ]
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -50,9 +49,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <footer style={{ padding: "16px 12px", fontSize: 12, color: "#6B7280", textAlign: "center" }}>
               <nav style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
                 <a href="/legal/terms">Terms</a>
-                <span>·</span>
+                <span>|</span>
                 <a href="/legal/privacy">Privacy</a>
-                <span>·</span>
+                <span>|</span>
                 <a href="/legal/tokushoho">Legal Notice</a>
               </nav>
               <div>&copy; {new Date().getFullYear()} WakeStake</div>
@@ -63,4 +62,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-
