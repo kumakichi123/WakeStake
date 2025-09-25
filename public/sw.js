@@ -21,14 +21,18 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
+  const { request } = event;
+  if (request.method !== "GET") {
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then(response => {
         const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
         return response;
       })
-      .catch(() => caches.match(event.request).then(cached => cached || Response.error()))
+      .catch(() => caches.match(request).then(cached => cached || Response.error()))
   );
 });

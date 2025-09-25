@@ -2,7 +2,7 @@
   "name": "WakeStake",
   "short_name": "WakeStake",
   "description": "WakeStake keeps you accountable to your wake-up goals with real financial stakes.",
-  "start_url": "/",
+  "start_url": "/check",
   "display": "standalone",
   "background_color": "#f6f3ff",
   "theme_color": "#7c3aed",
