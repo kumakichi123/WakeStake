@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { supabaseAnon } from "@/lib/supabase-browser";
+import type { Session } from "@supabase/supabase-js";
 
 const links = [
   { href: "/check", label: "Check" },
@@ -19,46 +20,57 @@ export default function SiteHeader() {
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
 
-    const loadSession = async () => {
-      const { data } = await supabaseAnon.auth.getSession();
+    const applySession = async (session: Session | null) => {
       if (!active) return;
-      const nextEmail = data.session?.user?.email ?? null;
+
+      const nextEmail = session?.user?.email ?? null;
       setEmail(nextEmail);
       setLoading(false);
-      if (nextEmail) {
-        try {
-          const res = await fetch("/api/me/status");
-          const body = await res.json().catch(() => ({}));
-          if (!active) return;
-          setConfigured(Boolean(body?.configured));
-        } catch (error) {
-          if (active) setConfigured(false);
-        }
-      } else {
+
+      if (!nextEmail) {
         setConfigured(false);
+        return;
+      }
+
+      const token = session?.access_token ?? null;
+      if (!token) {
+        setConfigured(false);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/me/status", {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!active) return;
+        setConfigured(res.ok && Boolean(body?.configured));
+      } catch {
+        if (active) setConfigured(false);
       }
     };
 
-    loadSession();
+    supabaseAnon.auth
+      .getSession()
+      .then(({ data }) => applySession(data.session))
+      .catch(() => {
+        if (active) {
+          setEmail(null);
+          setConfigured(false);
+          setLoading(false);
+        }
+      });
 
     const { data: listener } = supabaseAnon.auth.onAuthStateChange((_event, session) => {
-      const nextEmail = session?.user?.email ?? null;
-      setEmail(nextEmail);
-      if (nextEmail) {
-        fetch("/api/me/status")
-          .then(res => res.json().catch(() => ({})))
-          .then(body => {
-            setConfigured(Boolean(body?.configured));
-          })
-          .catch(() => setConfigured(false));
-      } else {
-        setConfigured(false);
-      }
+      applySession(session);
     });
 
     return () => {
       active = false;
+      controller.abort();
       listener?.subscription?.unsubscribe();
     };
   }, []);
