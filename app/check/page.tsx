@@ -218,7 +218,7 @@ export default function CheckPage() {
     const [hour, minute] = wake.split(":").map(Number);
     const end = dayjs().tz(tz).hour(hour).minute(minute).second(0).millisecond(0);
     const start = end.clone().subtract(grace, "minute");
-    return `${start.format("HH:mm")} – ${end.format("HH:mm")} (${tz})`;
+    return `${start.format("HH:mm")} - ${end.format("HH:mm")} (${tz})`;
   }, [windowInfo]);
 
   async function doCheck() {
@@ -227,9 +227,48 @@ export default function CheckPage() {
       setPopup({ tone: "success", title: "All set", message: "Today's check-in is already complete." });
       return;
     }
+    if (!windowInfo) {
+      setPopup({
+        tone: "warning",
+        title: "Setup required",
+        message: "Please finish your wake settings before checking in.",
+      });
+      return;
+    }
+
+    const { wake, grace, tz } = windowInfo;
+    const [hour, minute] = wake.split(":").map(Number);
+    const end = dayjs().tz(tz).hour(hour).minute(minute).second(0).millisecond(0);
+    const start = end.clone().subtract((grace ?? 60), "minute");
+    const nowLocal = dayjs().tz(tz);
+    const windowLabel = windowRange ?? `${start.format("HH:mm")} - ${end.format("HH:mm")} (${tz})`;
+
+    if (nowLocal.isBefore(start)) {
+      const message = `Window opens at ${start.format("HH:mm")}`;
+      setMsg(message);
+      setPopup({
+        tone: "warning",
+        title: "Window not open yet",
+        message: `${message}\nYour check-out window is ${windowLabel}`,
+      });
+      setProgress(0);
+      return;
+    }
+
+    if (nowLocal.isAfter(end)) {
+      const message = `Deadline passed at ${end.format("HH:mm")}`;
+      setMsg(message);
+      setPopup({
+        tone: "warning",
+        title: "Deadline passed",
+        message: `${message}\nYour check-out window is ${windowLabel}`,
+      });
+      setProgress(0);
+      return;
+    }
+
     setLoading(true);
     setMsg("Checking location...");
-
     navigator.geolocation.getCurrentPosition(
       position => {
         void (async () => {
@@ -388,6 +427,9 @@ export default function CheckPage() {
     </div>
   );
 }
+
+
+
 
 
 

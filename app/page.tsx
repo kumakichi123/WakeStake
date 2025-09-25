@@ -79,7 +79,7 @@ export default function Page() {
             <h2>Sample check-in: Tomorrow at 7:00</h2>
             <p>Slide to check out when you step outside. Miss it and $10 goes to your future self fund.</p>
             <ul>
-              <li>Wake window: 06:00 – 07:00</li>
+              <li>Wake window: 06:00 - 07:00</li>
               <li>Home radius: 70 m</li>
               <li>Current streak: 4 mornings</li>
             </ul>
@@ -145,3 +145,4 @@ export default function Page() {
     </main>
   );
 }
+
