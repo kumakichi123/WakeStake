@@ -1,5 +1,3 @@
-﻿import Link from "next/link";
-
 const features = [
   {
     title: "Only pay when you snooze",
@@ -53,9 +51,9 @@ export default function Page() {
             miss. Your future self will thank you.
           </p>
           <div className="landing-hero-cta">
-            <Link className="btn" href="/signup">
+            <a className="btn" href="/signup">
               Get started
-            </Link>
+            </a>
           </div>
 
           <div className="hero-metrics">
@@ -133,16 +131,17 @@ export default function Page() {
             <p>Join early risers who are finally leaving the snooze button behind.</p>
           </div>
           <div className="cta-actions">
-            <Link className="btn" href="/signup">
+            <a className="btn" href="/signup">
               Get started
-            </Link>
-            <Link className="btn link" href="/signin">
+            </a>
+            <a className="btn link" href="/signin">
               I already have one
-            </Link>
+            </a>
           </div>
         </div>
       </section>
     </main>
   );
 }
+
 

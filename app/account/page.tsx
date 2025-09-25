@@ -42,7 +42,17 @@ export default function AccountPage() {
     let active = true;
     (async () => {
       try {
-        const res = await fetch("/api/me/status");
+        const { data } = await supabaseAnon.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) {
+          if (!active) return;
+          const next = encodeURIComponent(window.location.pathname);
+          router.replace(`/signin?next=${next}`);
+          return;
+        }
+        const res = await fetch("/api/me/status", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const body = await res.json().catch(() => ({}));
         if (!active) return;
         if (res.status === 401) {

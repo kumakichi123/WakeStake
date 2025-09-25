@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseAnon } from "@/lib/supabase-browser";
@@ -17,7 +17,17 @@ export default function History() {
     let active = true;
     (async () => {
       try {
-        const res = await fetch("/api/me/status");
+        const { data } = await supabaseAnon.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) {
+          if (!active) return;
+          const next = encodeURIComponent(window.location.pathname);
+          router.replace(`/signin?next=${next}`);
+          return;
+        }
+        const res = await fetch("/api/me/status", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const body = await res.json().catch(() => ({}));
         if (!active) return;
         if (res.status === 401) {
@@ -47,8 +57,11 @@ export default function History() {
         router.replace(`/signin?next=${next}`);
         return;
       }
+      const token = data.session.access_token;
       try {
-        const res = await fetch("/api/history");
+        const res = await fetch("/api/history", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const body = await res.json().catch(() => ({}));
         if (!mounted) return;
         if (!res.ok) throw new Error(body?.error || "Failed to load history");
@@ -133,6 +146,7 @@ export default function History() {
     </main>
   );
 }
+
 
 
 
