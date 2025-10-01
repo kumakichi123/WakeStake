@@ -17,14 +17,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  // 対象データ取得
   const { data: profiles } = await supabaseService
     .from("profiles")
     .select("user_id,tz,home_lat,home_lng");
 
   const { data: schedules } = await supabaseService
     .from("schedules")
-    .select("user_id,wake_time_local,grace_min,active_everyday");
+    .select("user_id,wake_time_local,grace_min,active_everyday,active_effective_local_date");
 
   const map = new Map<string, any>();
   (profiles || []).forEach((p) => map.set(p.user_id, { ...p }));
@@ -38,15 +37,15 @@ export async function GET(req: NextRequest) {
   const nowUtc = new Date();
 
   for (const [uid, row] of map) {
-    // 必須設定
     if (!row?.active_everyday) continue;
     if (!row?.tz || row.home_lat == null || row.home_lng == null) continue;
     if (!row?.wake_time_local) continue;
 
-    // ユーザーTZの当日
     const todayLocal = dayjs().tz(row.tz).format("YYYY-MM-DD");
 
-    // 既に評価済みならskip（ユーザーTZの当日）
+    const effectiveDate: string | null | undefined = row.active_effective_local_date;
+    if (effectiveDate && todayLocal < effectiveDate) continue;
+
     const ex = await supabaseService
       .from("evaluations")
       .select("id")
@@ -55,7 +54,6 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
     if (ex.data) continue;
 
-    // 当日の評価ウィンドウ（ユーザーTZ起点）
     const win = localWindowUTC(
       row.tz,
       todayLocal,
@@ -63,10 +61,8 @@ export async function GET(req: NextRequest) {
       row.grace_min || 15
     );
 
-    // まだ締切前なら確定しない
     if (nowUtc < win.endUtc) continue;
 
-    // 窓内の最新チェックイン
     const { data: ci } = await supabaseService
       .from("checkins")
       .select("*")
@@ -88,7 +84,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 評価確定（evaluated_at_utc を明示）
     const ins = await supabaseService
       .from("evaluations")
       .insert({
@@ -102,7 +97,6 @@ export async function GET(req: NextRequest) {
       .single()
       .throwOnError();
 
-    // streak更新（ユーザーTZの当日で記録）
     const stPrev = await supabaseService
       .from("streaks")
       .select("*")
@@ -129,7 +123,6 @@ export async function GET(req: NextRequest) {
     if (status === "violation") {
       violations++;
 
-      // 課金（usage record）
       const st = await supabaseService
         .from("stakes")
         .select("stake_usd")
@@ -165,11 +158,9 @@ export async function GET(req: NextRequest) {
             });
           }
         } catch {
-          // 後続で再試行可
         }
       }
 
-      // メール通知（違反時のみ）
       const { data: u } = (await supabaseService
         .from("auth.users")
         .select("email")
@@ -187,3 +178,4 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ ok: true, processed, violations });
 }
+

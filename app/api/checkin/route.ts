@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseService } from "@/lib/supabase-server";
 import { localWindowUTC, haversineMeters } from "@/lib/utils";
 import dayjs from "dayjs";
@@ -34,16 +34,29 @@ export async function POST(req: NextRequest) {
     .single();
   const { data: schedule } = await supabaseService
     .from("schedules")
-    .select("wake_time_local,grace_min,active_everyday")
+    .select("wake_time_local,grace_min,active_everyday,active_effective_local_date")
     .eq("user_id", uid)
     .single();
 
-  if (!profile || !schedule || !schedule.active_everyday) {
+  if (!profile || !schedule) {
     return NextResponse.json({ ok: false, error: "not_configured" }, { status: 400 });
   }
 
   const tz = profile.tz || "UTC";
+
+  if (!schedule.active_everyday) {
+    return NextResponse.json({ ok: false, error: "inactive", message: "WakeStake is paused." }, { status: 400 });
+  }
+
   const todayLocal = dayjs().tz(tz).format("YYYY-MM-DD");
+
+  if (schedule.active_effective_local_date && todayLocal < schedule.active_effective_local_date) {
+    const resumeDisplay = dayjs.tz(schedule.active_effective_local_date, tz).format("MMM D");
+    return NextResponse.json(
+      { ok: false, error: "inactive_today", message: `WakeStake resumes on ${resumeDisplay}.` },
+      { status: 400 }
+    );
+  }
   const windowUtc = localWindowUTC(tz, todayLocal, schedule.wake_time_local, schedule.grace_min || 15);
   const nowUtc = dayjs().utc();
 
@@ -134,3 +147,5 @@ export async function POST(req: NextRequest) {
     { status: 400 },
   );
 }
+
+

@@ -1,8 +1,14 @@
-﻿"use client";
+"use client";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseAnon } from "@/lib/supabase-browser";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 type LatLng = { lat: number; lng: number };
 
@@ -10,7 +16,6 @@ const MapPicker = dynamic(() => import("../components/MapPicker"), { ssr: false 
 const stakeOptions = [1, 5, 10, 20, "custom"] as const;
 type StakeOption = (typeof stakeOptions)[number];
 
-// ※ ここをタプル型(as const)ではなく string[] にする
 const MAJOR_TIMEZONES: string[] = [
   "UTC",
   "America/Los_Angeles",
@@ -37,6 +42,7 @@ export default function AccountPage() {
   const [initializing, setInitializing] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [active, setActive] = useState(true);
+  const [activeEffectiveDate, setActiveEffectiveDate] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -112,6 +118,7 @@ export default function AccountPage() {
           setStakeNotice(null);
         }
         setActive(body.active_everyday ?? true);
+        setActiveEffectiveDate(typeof body.active_effective_local_date === "string" ? body.active_effective_local_date : null);
         setMessage(null);
       } catch (error: any) {
         if (!cancelled) setMessage(error?.message || "Failed to load settings");
@@ -157,6 +164,14 @@ export default function AccountPage() {
   }, [tzid]);
 
   const selected = useMemo(() => `$${stake}`, [stake]);
+
+  const todayLocal = dayjs().tz(tzid).format("YYYY-MM-DD");
+  const pendingResume = Boolean(active && activeEffectiveDate && todayLocal < activeEffectiveDate);
+  const statusDescription = !active
+    ? "WakeStake is paused. No reminders or charges will run until you resume."
+    : pendingResume
+    ? `WakeStake resumes on ${dayjs.tz(activeEffectiveDate!, tzid).format("MMM D")}. No reminders or charges until then.`
+    : "WakeStake is currently active. We'll expect a check-out every morning.";
 
   const handleSave = async () => {
     if (!point) {
@@ -213,8 +228,20 @@ export default function AccountPage() {
       if (!res.ok || !body?.ok) {
         throw new Error(body?.error || "Failed to update schedule");
       }
+      const nextEffective = typeof body.activeEffectiveLocalDate === "string" ? body.activeEffectiveLocalDate : null;
       setActive(nextActive);
-      setMessage(nextActive ? "WakeStake resumed." : "WakeStake paused.");
+      setActiveEffectiveDate(nextActive ? nextEffective : null);
+      if (nextActive) {
+        const todayLocal = dayjs().tz(tzid).format("YYYY-MM-DD");
+        if (nextEffective && todayLocal < nextEffective) {
+          const resumeDisplay = dayjs.tz(nextEffective, tzid).format("MMM D");
+          setMessage(`WakeStake resumes on ${resumeDisplay}.`);
+        } else {
+          setMessage("WakeStake resumed.");
+        }
+      } else {
+        setMessage("WakeStake paused.");
+      }
     } catch (error: any) {
       setMessage(error?.message || "Failed to update schedule");
     } finally {
@@ -364,11 +391,7 @@ export default function AccountPage() {
 
       <section className="card" style={{ marginTop: 16, padding: 20, display: "grid", gap: 12 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700 }}>WakeStake status</h2>
-        <p style={{ color: "#6b7280", margin: 0 }}>
-          {active
-            ? "WakeStake is currently active. We'll expect a check-out every morning."
-            : "WakeStake is paused. No reminders or charges will run until you resume."}
-        </p>
+        <p style={{ color: "#6b7280", margin: 0 }}>{statusDescription}</p>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <button className="btn link" type="button" onClick={() => toggleActive(false)} disabled={loading || !active}>
             Pause WakeStake
@@ -402,14 +425,4 @@ export default function AccountPage() {
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
 

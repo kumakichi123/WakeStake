@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseService } from "@/lib/supabase-server";
 
 export async function GET(req: NextRequest) {
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     supabaseService.from("profiles").select("tz,home_lat,home_lng").eq("user_id", uid).maybeSingle(),
     supabaseService
       .from("schedules")
-      .select("wake_time_local,grace_min,active_everyday")
+      .select("wake_time_local,grace_min,active_everyday,active_effective_local_date")
       .eq("user_id", uid)
       .maybeSingle(),
     supabaseService.from("stakes").select("stake_usd").eq("user_id", uid).maybeSingle(),
@@ -29,6 +29,8 @@ export async function GET(req: NextRequest) {
     wake_time: schedule.data?.wake_time_local || "07:00",
     grace_min: schedule.data?.grace_min || 60,
     active_everyday: schedule.data?.active_everyday ?? true,
+    active_effective_local_date: schedule.data?.active_effective_local_date ?? null,
     stake_usd: stake.data?.stake_usd || 5,
   });
 }
+

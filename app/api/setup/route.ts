@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseService } from "@/lib/supabase-server";
+import { localWindowUTC } from "@/lib/utils";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const DEFAULT_GRACE = 60;
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
@@ -28,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const { data: scheduleRow, error: scheduleError } = await db
     .from("schedules")
-    .select("active_everyday")
+    .select("wake_time_local,grace_min,active_everyday,active_effective_local_date")
     .eq("user_id", uid)
     .maybeSingle();
 
@@ -41,6 +50,29 @@ export async function POST(req: NextRequest) {
       ? active
       : scheduleRow?.active_everyday ?? true;
 
+  const todayLocal = dayjs().tz(tz).format("YYYY-MM-DD");
+  const grace = scheduleRow?.grace_min ?? DEFAULT_GRACE;
+
+  const resolveEffectiveDate = (shouldBeActive: boolean) => {
+    if (!shouldBeActive) return null;
+    const windowUtc = localWindowUTC(tz, todayLocal, wake_time, grace);
+    const nowUtc = new Date();
+    if (nowUtc >= windowUtc.endUtc) {
+      return dayjs.tz(todayLocal, tz).add(1, "day").format("YYYY-MM-DD");
+    }
+    return todayLocal;
+  };
+
+  let activeEffectiveLocalDate = scheduleRow?.active_effective_local_date ?? null;
+
+  if (!scheduleRow) {
+    activeEffectiveLocalDate = resolveEffectiveDate(nextActive);
+  } else if (typeof active === "boolean") {
+    activeEffectiveLocalDate = resolveEffectiveDate(active);
+  } else if (nextActive && !activeEffectiveLocalDate) {
+    activeEffectiveLocalDate = resolveEffectiveDate(true);
+  }
+
   await db
     .from("profiles")
     .upsert({ user_id: uid, tz, home_lat: home.lat, home_lng: home.lng })
@@ -51,8 +83,9 @@ export async function POST(req: NextRequest) {
     .upsert({
       user_id: uid,
       wake_time_local: wake_time,
-      grace_min: 60,
+      grace_min: grace,
       active_everyday: nextActive,
+      active_effective_local_date: activeEffectiveLocalDate,
     })
     .throwOnError();
 
@@ -71,3 +104,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
+
