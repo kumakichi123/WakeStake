@@ -1,9 +1,10 @@
-﻿// app/layout.tsx
+// app/layout.tsx
 import "./globals.css";
 import Providers from "./providers";
 import Script from "next/script";
 import SiteHeader from "./components/SiteHeader";
 import RegisterSW from "./register-sw";
+import InstallPrompt from "./components/InstallPrompt";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           <RegisterSW />
+          <InstallPrompt />
           <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
             <SiteHeader />
             <main style={{ flex: "1 1 auto" }}>{children}</main>
