@@ -70,10 +70,23 @@ export default function MapPicker({
 
   async function reverse(lat: number, lng: number) {
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
-      const json = await response.json();
-      onAddress(json.display_name || "");
-    } catch {
+      console.debug("[map:reverse] request", { lat, lng });
+      const response = await fetch(`/api/geocode/reverse?lat=${lat}&lng=${lng}`);
+      if (!response.ok) {
+        console.warn("[map:reverse] non-ok response", response.status, response.statusText);
+      }
+      const json = await response.json().catch((error) => {
+        console.error("[map:reverse] json parse error", error);
+        return null;
+      });
+      if (json?.display_name) {
+        onAddress(json.display_name);
+      } else {
+        console.warn("[map:reverse] missing display_name", json);
+        onAddress("");
+      }
+    } catch (error) {
+      console.error("[map:reverse] failed", error);
       onAddress("");
     }
   }
